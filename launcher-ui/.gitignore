@@ -1,0 +1,20 @@
+# Your settings and signing key stay on your machine
+config.properties
+*.keystore
+*.idsig
+
+# Build output
+out/
+*.apk
+*.ipk
+*.wgt
+__pycache__/
+
+# macOS
+.DS_Store
+my-config.json
+my-*.png
+backup-ar/
+*.bak
+*.rows-backup
+*.before_home_rows.bak
