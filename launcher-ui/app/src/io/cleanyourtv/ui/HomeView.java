@@ -2847,9 +2847,11 @@ private static final String[] TABS_AR = {"استكشف", "أفلام", "مسلس
         if (poster != null) {
             roundImage(c, poster, cell, r);
         } else {
-            fill.setShader(null);
-            fill.setColor(p != null && p.seeMore ? tone(0xFF1688D8, 0xFF145DA0) : tone(0xFFDADADF, 0xFF2C2C2E));
-            c.drawRoundRect(cell, r, r, fill);
+            if (p == null || !p.seeMore) {
+                fill.setShader(null);
+                fill.setColor(tone(0xFFDADADF, 0xFF2C2C2E));
+                c.drawRoundRect(cell, r, r, fill);
+            }
             if (p != null && p.seeMore) {
                 fitPaint.set(lCardTitle);
                 fitPaint.setTextAlign(Paint.Align.CENTER);
