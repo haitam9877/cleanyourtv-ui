@@ -317,7 +317,10 @@ final class TvUi {
         LinearLayout card = new LinearLayout(a);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(Gravity.CENTER);
-        card.setBackground(round(0x1FFFFFFF, 14 * k));
+        GradientDrawable moreBackground = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[] {0xFF197F78, 0xFF123F59});
+        moreBackground.setCornerRadius(14 * k);
+        card.setBackground(moreBackground);
         TextView arrow = text(a, k, 64, Ui.regular, INK);
         arrow.setText("›");
         arrow.setGravity(Gravity.CENTER);
