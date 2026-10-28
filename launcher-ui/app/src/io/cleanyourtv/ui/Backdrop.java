@@ -30,9 +30,9 @@ final class Backdrop {
     final int[] glass;      // lightly blurred (Liquid Glass: the photo shows through the glass)
     final Bitmap wide, tall;            // the photo on the cards
     final int[] light, lightGlass;      // by day: the frosted and glass versions, lightened
-    final Bitmap lightImage;            // by day: the background (the lightened frosted version, scaled up on screen)
+    final Bitmap lightImage;            // by day: the background (the lightly blurred glass version, scaled up on screen)
     final int[] nightFrost, nightGlass; // at night: frosted (the bottom drawer's frosted glass) and glass, darkened
-    final Bitmap nightImage;            // at night: the background (the darkened frosted version)
+    final Bitmap nightImage;            // at night: the background (the darkened, lightly blurred glass version)
 
     private Backdrop(Bitmap image, int[] frost, int[] glass, Bitmap wide, Bitmap tall, int[] light, int[] lightGlass,
                      int[] night, int[] nightGlass) {
@@ -45,8 +45,9 @@ final class Backdrop {
         this.lightGlass = lightGlass;
         this.nightFrost = night;
         this.nightGlass = nightGlass;
-        lightImage = light == null ? null : Bitmap.createBitmap(light, FW, FH, Bitmap.Config.ARGB_8888);
-        nightImage = night == null ? null : Bitmap.createBitmap(night, FW, FH, Bitmap.Config.ARGB_8888);
+        // Use the lightly blurred glass image for the full-screen backdrop, not the tiny heavily frosted image.
+        lightImage = lightGlass == null ? null : Bitmap.createBitmap(lightGlass, GW, GH, Bitmap.Config.ARGB_8888);
+        nightImage = nightGlass == null ? null : Bitmap.createBitmap(nightGlass, GW, GH, Bitmap.Config.ARGB_8888);
     }
 
     static Backdrop make(Bitmap src, boolean forLight) {
