@@ -259,6 +259,7 @@ private static final String[] TABS_AR = {"استكشف", "أفلام", "مسلس
     private final Paint imageFill = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint moreOutline = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint veil = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -627,6 +628,8 @@ private static final String[] TABS_AR = {"استكشف", "أفلام", "مسلس
         border.setStrokeWidth(2 * k);
         rim.setStyle(Paint.Style.STROKE);
         rim.setStrokeWidth(2.5f * k);
+        moreOutline.setStyle(Paint.Style.STROKE);
+        moreOutline.setStrokeWidth(1.5f * k);
     }
 
     // MARK: - Frames: 60 per second while something moves; nothing is redrawn when still
@@ -1714,6 +1717,7 @@ private static final String[] TABS_AR = {"استكشف", "أفلام", "مسلس
         statusDirty |= snap || statusChanged;
         heroDirty |= snap || heroChanged;
         drawerDirty |= snap || drawerChanged;
+        if (!sheetOpen && zone == Z_CARDS) updateCardBackdrop();
         spoken.focusMoved();
     }
 
@@ -2703,10 +2707,28 @@ private static final String[] TABS_AR = {"استكشف", "أفلام", "مسلس
             }
         }
         for (Recs.Pick p : recs.wanted()) recs.backdrop(p);   // all three tabs preloaded: switching tabs is instant
-        Backdrop b = cards.isEmpty() ? null : recs.backdrop(cards.get(0));
-        if (cards.isEmpty() || b != null) showBackdrop(b);
+        updateCardBackdrop();
         heroDirty = true;
         spoken.focusMoved();    // new picks under the focused card
+    }
+
+    /** Shows the backdrop for the focused recommendation, falling back to the first card outside that row. */
+    private void updateCardBackdrop() {
+        if (cards.isEmpty()) {
+            showBackdrop(null);
+            return;
+        }
+        int index = zone == Z_CARDS ? cardIndex : 0;
+        if (index < 0 || index >= cards.size()) index = 0;
+        Recs.Pick pick = cards.get(index);
+        if (pick == null) {
+            showBackdrop(null);
+            return;
+        }
+        if (pick.seeMore) return;
+        Backdrop b = recs.backdrop(pick);
+        if (b != null) showBackdrop(b);
+        else if (pick.backdrop == null || pick.backdrop.isEmpty()) showBackdrop(null);
     }
 
     private void selectTab(int index) {
@@ -2858,6 +2880,11 @@ private static final String[] TABS_AR = {"استكشف", "أفلام", "مسلس
                 c.drawText("›", cell.centerX(), cell.centerY() - 8 * k, fitPaint);
                 fitPaint.setTextAlign(Paint.Align.LEFT);
             }
+        }
+        if (p != null && p.seeMore) {
+            moreOutline.setColor(Ui.alpha(0xFFFFFFFF, 0.48f + 0.28f * f));
+            moreOutline.setStrokeWidth((1.5f + 0.7f * f) * k);
+            c.drawRoundRect(cell, r, r, moreOutline);
         }
         if (f > 0.01f) {
             if (lightSheens.length != cardRects.length) {
