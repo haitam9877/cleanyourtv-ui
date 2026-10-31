@@ -21,5 +21,6 @@ traces/
 launcher/hs_err_pid*.log
 launcher/replay_pid*.log
 
-# Local launcher settings contain the owner's TMDB API key; share config.example.properties instead.
+# Local launcher settings and API keys stay out of Git; share the example templates instead.
 launcher-ui/config.properties
+launcher-ui/tmdb-key.txt

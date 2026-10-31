@@ -11,9 +11,10 @@ and TV input handlers before it changes packages.
 TMDB key
 --------
 
-The local settings file is launcher-ui/config.properties. Put the key on its tmdb_key= line, then
-build the app. That file is ignored by Git so the key is not uploaded. The shareable blank template
-is launcher-ui/config.example.properties. Never paste the real key into a tracked file or commit.
+The local key file is launcher-ui/tmdb-key.txt. Paste the key there, then build; build.sh reads this
+file and inserts the key into the app. It is ignored by Git. Copy launcher-ui/tmdb-key.example.txt
+to create it. Region and optional city settings go in launcher-ui/config.properties, which is also
+ignored. Never paste the real key into a tracked file or commit.
 
 Connect and identify the TV (PowerShell)
 ----------------------------------------
