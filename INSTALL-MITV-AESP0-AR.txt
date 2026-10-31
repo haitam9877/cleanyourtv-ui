@@ -1,0 +1,117 @@
+دليل تثبيت CleanYourTV UI على Xiaomi MiTV-AESP0
+================================================
+
+هذا الدليل مخصص لطراز Xiaomi MiTV-AESP0 (aquaman) بنظام Android TV 9، ويستخدم قائمة التعطيل
+المختبرة في examples/xiaomi-mitv-aesp0/debloat.txt. لا تستخدم القائمة على طراز آخر.
+
+التعطيل قابل للاستعادة ولا يحذف التطبيقات. لا تعطل الحزم يدويًا بأوامر إضافية. تترك القائمة
+المكونات الأساسية وNetflix وPrime Video وYouTube وتطبيقَي com.rmedia.rplayer وcom.media3.example
+مفعلة. كما تترك المساعد الصوتي وChromecast وMi Cast ومحدّث النظام مفعّلة افتراضيًا.
+
+1. المتطلبات
+------------
+
+- الكمبيوتر والتلفاز على الشبكة نفسها.
+- على التلفاز: فعّل Developer options ثم USB debugging وNetwork/ADB debugging، ووافق على اتصال
+  الكمبيوتر عندما تظهر الرسالة.
+- على الكمبيوتر: Python 3، وGit for Windows، وJDK 17، وAndroid SDK مع platform 34 وbuild-tools 34.
+- افتح PowerShell من مجلد المستودع.
+
+أنشئ بيئة أدوات ADB عند الحاجة:
+
+    py -3 -m venv tools/venv
+    .\tools\venv\Scripts\python.exe -m pip install -r tools/requirements.txt
+
+عيّن عنوان التلفاز، واستبدل عنوان المثال بعنوان جهازك:
+
+    $env:TV_HOST = "192.168.1.50"
+    $py = ".\tools\venv\Scripts\python.exe"
+
+2. تحقق من الطراز
+-----------------
+
+    & $py -I .\tools\tv.py 'getprop ro.product.model'
+    & $py -I .\tools\tv.py 'getprop ro.build.version.sdk'
+
+تابع فقط إذا كان الطراز MiTV-AESP0 ورقم SDK هو 28. إذا اختلف أحدهما، توقف واستخدم تعليمات الطراز
+المطابق بدلًا من قائمة هذا الجهاز.
+
+3. المفتاح وإعدادات التطبيق
+---------------------------
+
+ملف المفتاح المحلي هو launcher-ui/tmdb-key.txt. انسخ القالب الفارغ مرة واحدة، ثم ألصق مفتاح TMDB
+في الملف:
+
+    if (-not (Test-Path .\launcher-ui\tmdb-key.txt)) { Copy-Item .\launcher-ui\tmdb-key.example.txt .\launcher-ui\tmdb-key.txt }
+    notepad .\launcher-ui\tmdb-key.txt
+
+يعتمد launcher-ui/build.sh على هذا الملف ويضم المفتاح إلى إعداد التطبيق وقت البناء. الملف مستثنى
+من Git ولا يُرفع إلى GitHub. لا تضع المفتاح في ملف متعقّب أو في هذه الوثيقة. إعدادات المنطقة والمدينة
+الاختيارية مكانها launcher-ui/config.properties؛ أنشئه من القالب إذا لم يكن موجودًا:
+
+    if (-not (Test-Path .\launcher-ui\config.properties)) { Copy-Item .\launcher-ui\config.example.properties .\launcher-ui\config.properties }
+    notepad .\launcher-ui\config.properties
+
+4. النسخ الاحتياطي قبل أي تغيير
+-------------------------------
+
+احفظ حالة الجهاز محليًا قبل التثبيت أو التعطيل:
+
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $backup = ".\backup\manual-$stamp"
+    New-Item -ItemType Directory -Force $backup | Out-Null
+    & $py -I .\tools\tv.py 'pm list packages' | Set-Content "$backup\packages.txt"
+    & $py -I .\tools\tv.py 'pm list packages -d' | Set-Content "$backup\disabled-packages.txt"
+    & $py -I .\tools\tv.py 'getprop' | Set-Content "$backup\getprop.txt"
+    & $py -I .\tools\tv.py 'settings list system' | Set-Content "$backup\settings-system.txt"
+    & $py -I .\tools\tv.py 'settings list secure' | Set-Content "$backup\settings-secure.txt"
+    & $py -I .\tools\tv.py 'settings list global' | Set-Content "$backup\settings-global.txt"
+
+مجلد backup مستثنى من Git؛ لا ترفعه لأنه قد يحتوي معرّفات الجهاز وإعداداته.
+
+5. بناء الواجهة وتثبيتها
+------------------------
+
+تأكد من ضبط ANDROID_HOME وJAVA_HOME لمساري Android SDK وJDK 17 على جهازك، ثم شغّل Git Bash من
+مجلد المستودع:
+
+    & "C:\Program Files\Git\bin\bash.exe" -c 'HOME_KEY_SERVICE=1 ./launcher-ui/build-and-install.sh'
+
+هذا الطراز قد يرسل زر Home كزر «كل التطبيقات»؛ لذلك يفعّل HOME_KEY_SERVICE. يتولى البرنامج بناء
+الواجهة، تثبيتها، تعيينها شاشة Home، والتحقق من فتحها قبل تعطيل المشغّل القديم.
+
+اضغط زر Home الحقيقي في الريموت وتأكد من ظهور الواجهة الجديدة قبل المتابعة.
+
+6. تعطيل تطبيقات Google TV المحددة لهذا الطراز
+----------------------------------------------
+
+بعد التأكد من عمل Home، طبّق القائمة المختبرة:
+
+    & "C:\Program Files\Git\bin\bash.exe" -c './tools/disable.sh examples/xiaomi-mitv-aesp0/debloat.txt'
+
+الأداة تحفظ سجل استعادة قبل أول تغيير، وتعطّل الحزم للمستخدم الحالي فقط. لا تحذف التطبيقات.
+تتحقق الأداة من الحزم الأساسية وملكية Home وخدمات HDMI/الإعدادات، وقد تتجاوز حزمة غير آمنة.
+
+إذا قالت الأداة إنها ستتجاوز com.google.android.tungsten.setupwraith لأن شبكة Wi-Fi المحفوظة تتبعها،
+لا تفرض تعطيلها. انسَ الشبكة من إعدادات التلفاز ثم أعد الاتصال بها لتنتقل ملكيتها، وبعدها أعد تشغيل
+الأمر إذا أردت تعطيلها.
+
+7. التحقق والاستعادة وإغلاق ADB
+-------------------------------
+
+أعد تشغيل التلفاز مرة واحدة. تحقق من عمل Home وWi-Fi والإعدادات والتطبيقات التي تستخدمها. لاستعادة
+الحزم التي عطلتها القائمة:
+
+    & "C:\Program Files\Git\bin\bash.exe" -c './tools/restore.sh examples/xiaomi-mitv-aesp0/debloat.txt'
+
+لإعادة مشغّل Google الأصلي عند الحاجة:
+
+    & $py -I .\tools\tv.py 'pm enable --user 0 com.google.android.tvlauncher'
+
+بعد انتهاء العمل، أوقف المفتاح الرئيسي لـDeveloper options، وألغِ أذونات تصحيح USB المحفوظة ثم أعد
+تشغيل التلفاز. تحقق من إغلاق ADB:
+
+    & $py -I .\tools\adb-closed.py $env:TV_HOST
+
+يجب أن يذكر الفحص أن الاتصال مرفوض أو أن المنفذ مغلق. إذا لم يكن كذلك، اترك ADB مغلقًا من إعدادات
+التلفاز وأعد الفحص.
