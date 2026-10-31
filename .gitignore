@@ -20,3 +20,6 @@ traces/
 *.aab
 launcher/hs_err_pid*.log
 launcher/replay_pid*.log
+
+# Local launcher settings contain the owner's TMDB API key; share config.example.properties instead.
+launcher-ui/config.properties

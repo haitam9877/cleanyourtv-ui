@@ -1,0 +1,81 @@
+CleanYourTV UI on Xiaomi MiTV-AESP0
+==================================
+
+This guide uses the tested device list at:
+  examples/xiaomi-mitv-aesp0/debloat.txt
+
+The commands disable packages reversibly; they do not uninstall apps. Do not use this list on a
+different TV model. The disable tool skips protected Android components and checks Home, Wi-Fi,
+and TV input handlers before it changes packages.
+
+TMDB key
+--------
+
+The local settings file is launcher-ui/config.properties. Put the key on its tmdb_key= line, then
+build the app. That file is ignored by Git so the key is not uploaded. The shareable blank template
+is launcher-ui/config.example.properties. Never paste the real key into a tracked file or commit.
+
+Connect and identify the TV (PowerShell)
+----------------------------------------
+
+1. Connect the TV to the same network. Turn on USB debugging and Network/ADB debugging, then accept
+   the computer on the TV. Replace the example address below with the TV's address.
+
+   $env:TV_HOST = "192.168.1.50"
+   $py = ".\tools\venv\Scripts\python.exe"
+   & $py -I .\tools\tv.py 'getprop ro.product.model'
+   & $py -I .\tools\tv.py 'getprop ro.build.version.sdk'
+
+2. Continue only if the model is MiTV-AESP0 and SDK is 28. If either differs, stop and use the
+   matching model's instructions instead.
+
+Back up before changes
+----------------------
+
+   $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+   $backup = ".\backup\manual-$stamp"
+   New-Item -ItemType Directory -Force $backup | Out-Null
+   & $py -I .\tools\tv.py 'pm list packages' | Set-Content "$backup\packages.txt"
+   & $py -I .\tools\tv.py 'pm list packages -d' | Set-Content "$backup\disabled-packages.txt"
+   & $py -I .\tools\tv.py 'getprop' | Set-Content "$backup\getprop.txt"
+   & $py -I .\tools\tv.py 'settings list system' | Set-Content "$backup\settings-system.txt"
+   & $py -I .\tools\tv.py 'settings list secure' | Set-Content "$backup\settings-secure.txt"
+   & $py -I .\tools\tv.py 'settings list global' | Set-Content "$backup\settings-global.txt"
+
+Install the launcher
+--------------------
+
+From the repository folder, use Git Bash. The build reads launcher-ui/config.properties:
+
+   & "C:\Program Files\Git\bin\bash.exe" -c 'HOME_KEY_SERVICE=1 ./launcher-ui/build-and-install.sh'
+
+The script builds and installs CleanYourTV UI, makes it Home, verifies that Home opens, then disables
+the old stock launcher. Press the real Home button on the remote and confirm the new home screen opens
+before continuing.
+
+Disable the Google TV apps on this model
+----------------------------------------
+
+   & "C:\Program Files\Git\bin\bash.exe" -c './tools/disable.sh examples/xiaomi-mitv-aesp0/debloat.txt'
+
+This applies the exact model's tested list, including its stock Google TV launcher and selected Google
+TV services. The list keeps Netflix, Prime Video, YouTube, com.rmedia.rplayer, and com.media3.example.
+It also keeps the device's voice assistant, Chromecast, Mi Cast, and firmware updater by default.
+The tool creates a restore record before changing anything. It will skip setupwraith if disabling it
+would remove the saved Wi-Fi connection; do not force that package off. Rejoin Wi-Fi in TV Settings
+first, then rerun the command if you still want it disabled.
+
+After the change
+----------------
+
+Reboot once. Check Home, Wi-Fi, Settings and the apps you use. To undo the list:
+
+   & "C:\Program Files\Git\bin\bash.exe" -c './tools/restore.sh examples/xiaomi-mitv-aesp0/debloat.txt'
+
+When finished, turn off the Developer options master switch (including USB/Network debugging),
+revoke saved debugging authorizations, and reboot. Confirm the ADB port is closed:
+
+   & $py -I .\tools\adb-closed.py 192.168.1.50
+
+Replace the example address with the TV's address. Do not save a real TV address, Wi-Fi name, or API
+key in this file or in GitHub.
