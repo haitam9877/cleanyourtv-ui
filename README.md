@@ -94,11 +94,13 @@ TV. The debloat, the supported TVs and how to go back are in [CleanYourTV's READ
 ## Installing by hand
 
 1. Follow [CleanYourTV's Quick start](README.cleanyourtv.md#quick-start) up to applying your TV's debloat list.
-2. Create the settings with your TMDB key (free, at themoviedb.org → Settings → API) and your city:
+2. Create the local settings and the TMDB key file (free key at themoviedb.org → Settings → API):
    ```bash
    cp launcher-ui/config.example.properties launcher-ui/config.properties
+   cp launcher-ui/tmdb-key.example.txt launcher-ui/tmdb-key.txt
    ```
-   `config.properties` stays out of git. The key belongs to the app and is still needed with the QR sign-in: signing in
+   Paste the key into `tmdb-key.txt`; it is ignored by git. `config.properties` is also local and holds region and
+   optional city settings. The key belongs to the app and is still needed with the QR sign-in: signing in
    only tells TMDB who you are, for your list and ratings. `language=auto` follows the TV's language.
 3. Build and install (JDK 17 and the Android SDK with build-tools 34+ and platform android-34; no Gradle):
    ```bash

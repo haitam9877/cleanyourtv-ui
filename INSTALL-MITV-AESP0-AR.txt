@@ -1,0 +1,57 @@
+دليل تثبيت CleanYourTV UI على Xiaomi MiTV-AESP0
+================================================
+1) تثبيت الحزم والأدوات
+-----------------------
+افتح PowerShell من مجلد المستودع. ثبّت أدوات Python:
+py -3 -m venv tools/venv
+.\tools\venv\Scripts\python.exe -m pip install -r tools/requirements.txt
+ثبّت JDK 17 وAndroid SDK platform 34 وbuild-tools 34، ثم عيّن مساريهما:
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
+$env:ANDROID_HOME = "C:\Android\Sdk"
+عدّل المسارات أعلاه لتطابق أماكن التثبيت على كمبيوترك.
+2) تعريف التلفاز والنسخ الاحتياطي
+--------------------------------
+فعّل Developer options وUSB debugging وNetwork/ADB debugging من التلفاز، ووافق على اتصال الكمبيوتر. عيّن عنوان التلفاز بدل عنوان المثال:
+$env:TV_HOST = "192.168.1.50"
+$py = ".\tools\venv\Scripts\python.exe"
+& $py -I .\tools\tv.py 'getprop ro.product.model'
+& $py -I .\tools\tv.py 'getprop ro.build.version.sdk'
+تابع فقط إذا ظهر الطراز MiTV-AESP0 ورقم SDK يساوي 28. إذا اختلفا فتوقف ولا تستخدم قائمة هذا الجهاز.
+احفظ نسخة من حالة التلفاز قبل أي تغيير:
+$stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$backup = ".\backup\manual-$stamp"
+New-Item -ItemType Directory -Force $backup | Out-Null
+& $py -I .\tools\tv.py 'pm list packages' | Set-Content "$backup\packages.txt"
+& $py -I .\tools\tv.py 'pm list packages -d' | Set-Content "$backup\disabled-packages.txt"
+& $py -I .\tools\tv.py 'getprop' | Set-Content "$backup\getprop.txt"
+& $py -I .\tools\tv.py 'settings list system' | Set-Content "$backup\settings-system.txt"
+& $py -I .\tools\tv.py 'settings list secure' | Set-Content "$backup\settings-secure.txt"
+& $py -I .\tools\tv.py 'settings list global' | Set-Content "$backup\settings-global.txt"
+مجلد backup محلي ومستثنى من Git؛ لا ترفعه لأنه قد يحتوي معرّفات وإعدادات الجهاز.
+3) إعداد المفتاح وتثبيت الواجهة
+-------------------------------
+أنشئ ملف المفتاح المحلي والصق فيه مفتاح TMDB:
+if (-not (Test-Path .\launcher-ui\tmdb-key.txt)) { Copy-Item .\launcher-ui\tmdb-key.example.txt .\launcher-ui\tmdb-key.txt }
+notepad .\launcher-ui\tmdb-key.txt
+الملف launcher-ui/tmdb-key.txt مستثنى من Git. يقرأه launcher-ui/build.sh ويضيف المفتاح لإعداد التطبيق أثناء البناء. لا تضع المفتاح في ملف متعقّب أو في GitHub.
+أنشئ إعدادات المنطقة والمدينة الاختيارية إن لم تكن موجودة:
+if (-not (Test-Path .\launcher-ui\config.properties)) { Copy-Item .\launcher-ui\config.example.properties .\launcher-ui\config.properties }
+notepad .\launcher-ui\config.properties
+تأكد من ضبط JAVA_HOME وANDROID_HOME قبل البناء. ثم شغّل أمر التثبيت من PowerShell:
+& "C:\Program Files\Git\bin\bash.exe" -c 'HOME_KEY_SERVICE=1 ./launcher-ui/build-and-install.sh'
+يفعّل HOME_KEY_SERVICE دعم زر Home الخاص بهذا الطراز. يثبت البرنامج الواجهة ويجعلها Home، ويتحقق من فتحها قبل تعطيل المشغّل القديم. اضغط زر Home الحقيقي في الريموت وتأكد من ظهور الواجهة قبل الخطوة التالية.
+4) تعطيل تطبيقات Google TV
+--------------------------
+بعد التأكد من عمل Home، طبّق قائمة هذا الطراز:
+& "C:\Program Files\Git\bin\bash.exe" -c './tools/disable.sh examples/xiaomi-mitv-aesp0/debloat.txt'
+الأداة تعطل الحزم للمستخدم الحالي فقط ولا تحذفها، وتحفظ سجل استعادة قبل التغيير. القائمة تبقي Netflix وPrime Video وYouTube وcom.rmedia.rplayer وcom.media3.example، وتترك المساعد وChromecast وMi Cast ومحدّث النظام مفعّلة افتراضيًا.
+إذا تخطت الأداة com.google.android.tungsten.setupwraith لأن شبكة Wi-Fi المحفوظة تتبعها، لا تجبر تعطيلها. انسَ الشبكة من إعدادات التلفاز وأعد الاتصال بها، ثم أعد الأمر إذا أردت تعطيلها.
+5) التحقق والاستعادة وإغلاق ADB
+-------------------------------
+أعد تشغيل التلفاز مرة واحدة وتحقق من Home وWi-Fi والإعدادات والتطبيقات. لاستعادة الحزم التي عطلتها القائمة:
+& "C:\Program Files\Git\bin\bash.exe" -c './tools/restore.sh examples/xiaomi-mitv-aesp0/debloat.txt'
+لإعادة تفعيل مشغّل Google الأصلي عند الحاجة:
+& $py -I .\tools\tv.py 'pm enable --user 0 com.google.android.tvlauncher'
+بعد الانتهاء، أوقف المفتاح الرئيسي لـDeveloper options، وألغِ أذونات ADB المحفوظة، ثم أعد تشغيل التلفاز. تحقق من إغلاق الاتصال:
+& $py -I .\tools\adb-closed.py $env:TV_HOST
+يجب أن يفيد الفحص بأن الاتصال مرفوض أو المنفذ مغلق.
